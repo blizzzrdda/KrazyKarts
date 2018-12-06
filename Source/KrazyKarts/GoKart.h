@@ -30,9 +30,9 @@ public:
 
 private:
 	UPROPERTY(VisibleAnywhere)
-		UGoKartMovementComponent *MovementComponent;
+		UGoKartMovementComponent* MovementComponent;
 	UPROPERTY(VisibleAnywhere)
-		UGoKartMovementReplicator *MovementReplicator;
+		UGoKartMovementReplicator* MovementReplicator;
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);

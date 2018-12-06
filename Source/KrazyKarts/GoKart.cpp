@@ -3,7 +3,6 @@
 #include "GoKart.h"
 #include "Components/InputComponent.h"
 #include "DrawDebugHelpers.h"
-#include "UnrealNetwork.h"
 
 // Sets default values
 AGoKart::AGoKart()
@@ -11,10 +10,10 @@ AGoKart::AGoKart()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = 1;
+	bReplicateMovement = 0;
 
 	MovementComponent = CreateDefaultSubobject<UGoKartMovementComponent>(TEXT("MovementComponent"));
 	MovementReplicator = CreateDefaultSubobject<UGoKartMovementReplicator>(TEXT("MovementReplicator"));
-	//MovementReplicator->SetIsReplicated(1);
 }
 
 // Called when the game starts or when spawned
@@ -22,10 +21,8 @@ void AGoKart::BeginPlay()
 {
 	Super::BeginPlay();
 
-	check(MovementComponent);
-
 	if (HasAuthority()) {
-		NetUpdateFrequency = 1.f;
+		NetUpdateFrequency = 1;
 	}
 }
 
@@ -56,11 +53,13 @@ void AGoKart::Tick(float DeltaTime)
 
 void AGoKart::MoveForward(float Value)
 {
+	if (MovementComponent == nullptr) return;
 	MovementComponent->SetThrottle(Value);
 }
 
 void AGoKart::MoveRight(float Value)
 {
+	if (MovementComponent == nullptr) return;
 	MovementComponent->SetSteeringThrow(Value);
 }
 

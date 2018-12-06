@@ -1,13 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GoKartMovementComponent.h"
-#include "GameFramework/Actor.h"
-#include "Engine/World.h"
 
-void UGoKartMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);	
-}
 
 UGoKartMovementComponent::UGoKartMovementComponent()
 {
@@ -17,6 +11,16 @@ UGoKartMovementComponent::UGoKartMovementComponent()
 void UGoKartMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
+}
+void UGoKartMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (GetOwnerRole() == ROLE_AutonomousProxy || GetOwner()->GetRemoteRole() == ROLE_SimulatedProxy)
+	{
+		LastMove = CreateMove(DeltaTime);
+		SimulateMove(LastMove);
+	}
 }
 
 void UGoKartMovementComponent::SimulateMove(const FGoKartMove& Move)
