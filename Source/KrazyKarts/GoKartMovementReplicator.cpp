@@ -75,13 +75,28 @@ void UGoKartMovementReplicator::ClientTick(float DeltaTime)
 	ClientTimeSinceUpdate += DeltaTime;
 
 	if (ClientTimeBetweenLastUpdate < KINDA_SMALL_NUMBER) return;
+	if (!MovementComponent) { return; }
 
 	FVector TargetLocation = ServerState.Transform.GetLocation();
 	float LerpRatio = ClientTimeSinceUpdate / ClientTimeBetweenLastUpdate;
-	FVector StartLocation = ClientStartLocation;
+	FVector StartLocation = ClientStartTransform.GetLocation();
 	
-	FVector NewLocation = FMath::LerpStable(StartLocation, TargetLocation, LerpRatio);
+	float VelocityToDeravitive = ClientTimeBetweenLastUpdate * 100;
+	FVector StartDerivative = ClientStartVelocity * VelocityToDeravitive;
+	FVector TargetDerivative = ServerState.Velocity * VelocityToDeravitive;
+
+	FVector NewLocation = FMath::CubicInterp(StartLocation, StartDerivative, TargetLocation, TargetDerivative, LerpRatio);
 	GetOwner()->SetActorLocation(NewLocation);
+
+	FVector NewDerivative = FMath::CubicInterpDerivative(StartLocation, StartDerivative, TargetLocation, TargetDerivative, LerpRatio);
+	FVector NewVelocity = NewDerivative / VelocityToDeravitive;
+	MovementComponent->SetVelocity(NewVelocity);
+
+	FQuat TargetRotation = ServerState.Transform.GetRotation();
+	FQuat StartRotation = ClientStartTransform.GetRotation();
+
+	FQuat NewRotation = FQuat::Slerp(StartRotation, TargetRotation, LerpRatio);
+	GetOwner()->SetActorRotation(NewRotation);
 }
 
 void UGoKartMovementReplicator::Server_SendMove_Implementation(FGoKartMove Move)
@@ -113,10 +128,13 @@ void UGoKartMovementReplicator::OnRep_ServerState()
 
 void UGoKartMovementReplicator::SimulatedProxy_OnRep_ServerState()
 {
+	if (!MovementComponent) { return; }
+
 	ClientTimeBetweenLastUpdate = ClientTimeSinceUpdate;
 	ClientTimeSinceUpdate = 0;
 
-	ClientStartLocation = GetOwner()->GetActorLocation();
+	ClientStartTransform = GetOwner()->GetTransform();
+	ClientStartVelocity = MovementComponent->GetVelocity();	
 }
 
 void UGoKartMovementReplicator::AutonomousProxy_OnRep_ServerState()
@@ -128,6 +146,6 @@ void UGoKartMovementReplicator::AutonomousProxy_OnRep_ServerState()
 	ClearAcknowledgeMoves(ServerState.LastMove);
 	for (const FGoKartMove& Move : UnacknowledgedMoves)
 	{
-		MovementComponent->SimulateMove(Move);
+		//MovementComponent->SimulateMove(Move);
 	}
 }
